@@ -62,7 +62,7 @@ void PCA::first_k_ONB(const int k)
     
     Eigen::JacobiSVD<MatrixXf> svd(OriginalData, Eigen::ComputeThinU | Eigen::ComputeThinV);
     
-    VectorXf EigenVector = svd.singularValues();
+    EigenVector = svd.singularValues();
     std::cout << "The accuracy is " << EigenVector.head(k).sum() / EigenVector.sum() * 1.0 << std::endl;
     
     ONB =  svd.matrixV().block(0, 0, n_Dimensions, k);
@@ -84,13 +84,13 @@ void PCA::sole_k_ONB(const int k)
     }
     Eigen::JacobiSVD<MatrixXf> svd(OriginalData, Eigen::ComputeThinU | Eigen::ComputeThinV);
     
-    VectorXf EigenVector = svd.singularValues();
+    EigenVector = svd.singularValues();
     std::cout << "The accuracy is " << EigenVector(k - 1) / EigenVector.sum() * 1.0 << std::endl;
     
     ONB =  svd.matrixV().block(0, k - 1, n_Dimensions, 1);
 }
 
-void PCA::Proj2LowDim(VectorXf OriginalVector)
+VectorXf PCA::Proj2LowDim(VectorXf OriginalVector)
 {
     /*
      *  Description:
@@ -101,6 +101,7 @@ void PCA::Proj2LowDim(VectorXf OriginalVector)
      */
     
     proj = ONB.transpose() * OriginalVector;
+    return proj;
 }
 
 VectorXf PCA::Reconstruction()
@@ -111,6 +112,28 @@ VectorXf PCA::Reconstruction()
      *
      */
     return ONB * proj + Average;
+}
+
+MatrixXf PCA::Whitening()
+{
+    /*
+     *  Description:
+     *  Eliminate the correlation between the data
+     *
+     */
+    
+    first_k_ONB(n_Dimensions);
+
+    MatrixXf whitenData(OriginalData.rows(), OriginalData.cols());
+    for (int i = 0; i < n_Samples; i++)
+    {
+        for (int j = 0; j < n_Dimensions; j++)
+        {
+            whitenData(i, j) = (Proj2LowDim(OriginalData.row(i)))(j) / sqrt(EigenVector(j));
+        }
+    }
+    
+    return whitenData;
 }
 
 VectorXf PCA::GetOriginalVector(const int k)
@@ -132,10 +155,10 @@ void PCA::writeProj(std::string add) const
      */
     std::ofstream f(add);
     
-    for (int i = 0; i < proj.rows() - 1; i++)
+    for (int i = 0; i < proj.size() - 1; i++)
     {
         f << proj(i) << ',';
     }
-    f << proj(proj.rows() - 1) << '\n';
+    f << proj(proj.size() - 1) << '\n';
     f.close();
 }

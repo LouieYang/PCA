@@ -3,8 +3,7 @@
 void LoadMatrix(Eigen::MatrixXf& matrix, std::string address,
                 const int cols, const int rows)
 {
-    assert(matrix.cols() == cols);
-    assert(matrix.rows() == rows);
+    matrix = Eigen::MatrixXf(rows, cols);
     
     std::ifstream inf;
     
@@ -23,7 +22,12 @@ void LoadMatrix(Eigen::MatrixXf& matrix, std::string address,
         getline(inf,line);
         
         firComma = line.find(',', 0);
-
+        
+        if (row == rows)
+        {
+            break;
+        }
+        
         matrix(row, col++) = atof(line.substr(0,firComma).c_str());
         
         while (firComma < line.size() && col <= cols - 1)
